@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the archived software release and the associated publication."
+title: "PSE acute thalamic diaschisis multimodal imaging pipeline"
+type: software
+authors:
+  - family-names: Leclercq
+    given-names: Vincent
+version: 1.0.0
+date-released: 2026-09-07

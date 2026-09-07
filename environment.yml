@@ -1,0 +1,17 @@
+name: pse-stroke
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - nibabel
+  - matplotlib
+  - requests
+  - pandas
+  - pip
+
+# The NVAUTO model is provided by the third-party `stroke_segmentor` package.
+# Install it according to the upstream project instructions after creating
+# this environment. The optional setup scripts in scripts/setup document the
+# two workarounds that were required on the Apple-Silicon pilot workstation.

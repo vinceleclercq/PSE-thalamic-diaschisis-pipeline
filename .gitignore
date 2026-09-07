@@ -1,0 +1,52 @@
+# macOS / editors
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# MATLAB
+*.asv
+*.autosave
+
+# Patient-level data / imaging: NEVER commit these
+sub-P*/
+derivatives/
+data/
+*.dcm
+*.ima
+*.nii
+*.nii.gz
+*.mgz
+*.mgh
+*.mat
+*.edf
+*.bdf
+*.nrrd
+*.mha
+*.mhd
+
+# Analysis tables/logs are private by default
+*.csv
+*.tsv
+*.log
+*.txt
+
+# Keep public templates/documentation
+!data_templates/*.csv
+!README.md
+!PROVENANCE.md
+!ZENODO_RELEASE_CHECKLIST.md
+
+# Model weights / archives
+*.ts
+*.pth
+*.pt
+*.zip
+*.tar
+*.tar.gz
