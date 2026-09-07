@@ -37,6 +37,7 @@ Groups
 from __future__ import annotations
 
 import os
+import re
 
 import csv
 from collections import defaultdict
@@ -67,11 +68,14 @@ OUT_DIR = (
     ROOT / "derivatives" / "acute_pilot_thalamus_ctp_extended"
 )
 
-SUBJECTS = [f"sub-P{i:03d}" for i in range(1, 8)]
 DIRECT_THAL_THRESHOLD_PCT = 1.0
 CANONICAL_ORDER = ["CTP_CBF", "CTP_CBV", "CTP_MTT", "CTP_Tmax", "CTP_TTP"]
 TIME_MAPS = {"CTP_MTT", "CTP_Tmax", "CTP_TTP"}
 
+
+def subject_sort_key(subject: str):
+    parts = re.split(r"(\d+)", subject)
+    return tuple(int(x) if x.isdigit() else x.lower() for x in parts)
 
 def to_float(x):
     if x is None:
@@ -186,8 +190,9 @@ def read_ctp_thalamus():
 
 def build_patient_rows(lesion, ctp, modalities):
     rows = []
+    subjects = sorted(lesion, key=subject_sort_key)
 
-    for sub in SUBJECTS:
+    for sub in subjects:
         l = lesion.get(sub, {})
         row = {
             "Subject": sub,

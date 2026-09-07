@@ -86,7 +86,7 @@ The pilot was developed/tested with:
 - NumPy, SciPy, NiBabel, Matplotlib
 - FSL atlas data: MNI152 template and JHU ICBM-DTI-81 white-matter labels
 
-Exact package versions should be frozen at the Zenodo release using a `conda env export --from-history` plus `pip freeze` from the analysis environment.
+Exact package versions should be frozen at the Zenodo release using a cleaned `conda env export --from-history` plus a portable package-version lock file from the analysis environment.
 
 ## Configuration
 
@@ -103,13 +103,17 @@ A template is provided in `config.example.sh`.
 
 MATLAB scripts use `$PSE_ROOT` and, when relevant, `$SPM_DIR`. If `PSE_ROOT` is unset, they default to `~/PSE`.
 
+Subject identifiers are **not hard-coded** in the public scripts. Subjects are discovered from local `sub-*` project directories or from the local stroke-side table, depending on the processing stage.
+
+Visual lesion-QC decisions are also kept outside the public code. `PSE_FINALIZE_LESIONS_AND_ROI_OVERLAP_01.py` optionally reads a local `PSE_LESION_QC_DECISIONS.csv` (or the path supplied via `PSE_LESION_QC_FILE`). A generic template is provided in `data_templates/`; participant-level QC decisions should remain in the local/private analysis tree.
+
 ## Expected project layout
 
 The pilot expects pseudonymized subject folders such as:
 
 ```text
 <PSE_ROOT>/
-  sub-P001/
+  sub-PXXX/
     acute/
       T1/
       DWI/
@@ -199,10 +203,12 @@ Primary coverage rule in the pilot:
 Audits available acute diffusion-related NIfTI files.
 
 ### `PSE_DIFFUSION_DICOM_AUDIT_02.m`
-Reads source DICOM metadata to identify ADC/DWI series and b-values. This was used to verify that the three subjects without vendor ADC maps had b=0 and b=1000 images available.
+Reads source DICOM metadata to identify ADC/DWI series and b-values. In the pilot, this verified the b=0 and b=1000 source images when a vendor ADC map was absent.
 
 ### `PSE_RECONSTRUCT_ADC_FROM_DWI_01.m`
-Reconstructs ADC for the three pilot subjects without vendor ADC using:
+Automatically selects subjects with acute DWI data but no vendor ADC map. The public script preserves the pilot b=0/b=1000 filename mapping, but it must only be used after `PSE_DIFFUSION_DICOM_AUDIT_02.m` has verified the source-DICOM b-values for the local dataset.
+
+Reconstructs ADC for subjects without a vendor ADC map using:
 
 ```text
 ADC = -ln(Sb1000 / Sb0) / 1000

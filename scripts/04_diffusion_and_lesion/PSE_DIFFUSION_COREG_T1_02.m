@@ -4,7 +4,7 @@
 % Changes from v01
 % ----------------
 % 1) Uses original ADC when available.
-% 2) Falls back to reconstructed ADC for P003-P005.
+% 2) Falls back to a reconstructed ADC when a vendor ADC is absent.
 % 3) Explicitly identifies the high-b DWI from DWI_001 / DWI_002 using the
 %    lower positive-signal median, instead of selecting an arbitrary DWI.
 % 4) Records ADC source and ADC/DWI center distance before registration.
@@ -38,7 +38,10 @@ else
     SPM_CANDIDATES = [fullfile(string(getenv("HOME")),"spm25"), ...
                       fullfile(string(getenv("HOME")),"spm")];
 end
-subjects = "sub-P" + compose("%03d",1:7);
+subjects = discoverSubjectDirs(NIFTI_ROOT);
+if isempty(subjects)
+    error("No subject NIfTI directories were found under: %s", NIFTI_ROOT);
+end
 
 if ~isfolder(OUT_ROOT), mkdir(OUT_ROOT); end
 
@@ -222,4 +225,12 @@ function applyHeaderTransform(niftiFile,M)
         oldMat=spm_get_space(spec);
         spm_get_space(spec,M\oldMat);
     end
+end
+
+function subjects = discoverSubjectDirs(parentDir)
+% Discover subject directories dynamically.
+
+    d = dir(fullfile(parentDir, "sub-*"));
+    d = d([d.isdir]);
+    subjects = sort(string({d.name}));
 end

@@ -12,7 +12,7 @@ Changes include:
 - retained only the final/relevant versions of duplicate MATLAB/QC scripts;
 - consolidated the two final NVAUTO preprocessing stages into `PSE_NVAUTO_SEGMENTATION_FINAL.py`;
 - renamed public NVAUTO output folders to avoid the historical but inaccurate implication that the full DeepISLES ensemble was used;
-- added a reproducible ADC reconstruction script based on the b=0/b=1000 reconstruction actually used for the three subjects without vendor ADC maps;
+- added a reproducible ADC reconstruction script based on the b=0/b=1000 reconstruction used when vendor ADC maps were absent;
 - excluded patient data, images, lesion masks and generated analysis tables.
 
 ## NVAUTO development provenance
@@ -48,12 +48,12 @@ The following local scripts represented intermediate or rejected methods and sho
 
 These development steps were useful for QC and method selection but did not define the final lesion masks used in the lesion-aware analysis.
 
-## Pilot-specific decisions retained in code
+## Pilot-specific analytical decisions
 
 Some scripts intentionally preserve pilot-specific analytical decisions, including:
 
-- pseudonymous subjects `sub-P001` to `sub-P007` in the analysis scripts;
-- reconstructed ADC for `sub-P003`, `sub-P004` and `sub-P005` after source-DICOM verification of b-values;
+- subject identifiers are discovered from the local project structure or local side/QC tables rather than hard-coded in the public scripts;
+- ADC reconstruction is triggered for subjects without a vendor ADC map, using the b=0/b=1000 file mapping only after source-DICOM verification of b-values;
 - direct ipsilateral thalamic overlap >=1% as the main descriptive sensitivity threshold;
 - no inferential p-values in the 7-subject exploratory analyses;
 - ASL interpreted through relative/asymmetry measures because absolute units were not formally verified.

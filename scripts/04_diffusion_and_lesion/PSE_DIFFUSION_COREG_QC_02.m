@@ -39,7 +39,10 @@ else
     SPM_CANDIDATES = [fullfile(string(getenv("HOME")),"spm25"), ...
                       fullfile(string(getenv("HOME")),"spm")];
 end
-subjects = "sub-P" + compose("%03d",1:7);
+subjects = discoverSubjectDirs(IN_ROOT);
+if isempty(subjects)
+    error("No diffusion-coregistration subject directories were found under: %s", IN_ROOT);
+end
 
 if ~isfolder(OUT_ROOT), mkdir(OUT_ROOT); end
 
@@ -206,4 +209,12 @@ function rgb=makeRGOverlay(T,D,wt,wd)
         tmp(bad)=0;
         rgb(:,:,c)=tmp;
     end
+end
+
+function subjects = discoverSubjectDirs(parentDir)
+% Discover subject directories dynamically from the processing output.
+
+    d = dir(fullfile(parentDir, "sub-*"));
+    d = d([d.isdir]);
+    subjects = sort(string({d.name}));
 end

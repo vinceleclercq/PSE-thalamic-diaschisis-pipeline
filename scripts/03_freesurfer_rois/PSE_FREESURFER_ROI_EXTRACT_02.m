@@ -1,6 +1,6 @@
 %% PSE_FREESURFER_ROI_EXTRACT_02.m
 % Corrected extraction of bilateral thalamic and hippocampal volumes
-% from FreeSurfer aseg.stats for the 7 acute PSE subjects.
+% from FreeSurfer aseg.stats for all discovered acute PSE subjects.
 %
 % Correction vs v01:
 % - eTIV extraction now matches ONLY EstimatedTotalIntraCranialVol.
@@ -29,7 +29,10 @@ if ~isfolder(OUT_DIR)
     mkdir(OUT_DIR);
 end
 
-subjects = "sub-P" + compose("%03d", 1:7) + "_acute";
+subjects = discoverFreeSurferAcuteSubjects(FS_DIR);
+if isempty(subjects)
+    error("No acute FreeSurfer subject directories were found under: %s", FS_DIR);
+end
 n = numel(subjects);
 
 Subject = strings(n,1);
@@ -192,4 +195,15 @@ function etiv = findETIV(lines)
             end
         end
     end
+end
+
+function subjects = discoverFreeSurferAcuteSubjects(fsDir)
+% Discover completed/partial acute FreeSurfer subject directories without
+% hard-coding participant identifiers.
+
+    d = dir(fullfile(fsDir, "sub-*"));
+    d = d([d.isdir]);
+    subjects = string({d.name});
+    subjects = subjects(endsWith(subjects, "_acute"));
+    subjects = sort(subjects);
 end

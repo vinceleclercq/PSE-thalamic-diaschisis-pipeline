@@ -16,7 +16,10 @@ else
     SPM_CANDIDATES = [fullfile(string(getenv("HOME")),"spm25"), ...
                       fullfile(string(getenv("HOME")),"spm")];
 end
-subjects = "sub-P" + compose("%03d",1:7);
+subjects = discoverSubjectDirs(NIFTI_ROOT);
+if isempty(subjects)
+    error("No subject NIfTI directories were found under: %s", NIFTI_ROOT);
+end
 
 if ~isfolder(OUT_ROOT), mkdir(OUT_ROOT); end
 
@@ -127,4 +130,12 @@ fprintf("============================================================\n");
 for SUB = subjects
     fprintf("\n--- %s ---\n",SUB);
     disp(T(T.Subject==SUB & T.CandidateClass~="OTHER",:));
+end
+
+function subjects = discoverSubjectDirs(parentDir)
+% Discover subject directories dynamically.
+
+    d = dir(fullfile(parentDir, "sub-*"));
+    d = d([d.isdir]);
+    subjects = sort(string({d.name}));
 end

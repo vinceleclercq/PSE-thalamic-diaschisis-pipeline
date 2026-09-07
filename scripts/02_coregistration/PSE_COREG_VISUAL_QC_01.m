@@ -33,10 +33,8 @@ subjects = subjects(ord);
 
 fprintf('\n============================================================\n');
 fprintf('PSE COREGISTRATION VISUAL QC\n');
-fprintf('Pay particular attention to:\n');
-fprintf('  - PET_FDG in sub-P004\n');
-fprintf('  - ASL_CBF in sub-P001 and sub-P004\n');
-fprintf('  - CTP_REF in ALL subjects\n');
+fprintf('Review every available modality for every subject.\n');
+fprintf('CTP alignment should receive particular attention because of potential origin differences.\n');
 fprintf('============================================================\n\n');
 
 for s = 1:numel(subjects)

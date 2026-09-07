@@ -2,7 +2,8 @@
 % Reconstruct ADC maps for acute subjects without a vendor-provided ADC map.
 %
 % This reproduces the reconstruction used in the PSE acute pilot for
-% sub-P003, sub-P004 and sub-P005 after source-DICOM audit confirmed that:
+% subjects without a vendor ADC map. Before running this script, the
+% source-DICOM audit must confirm the local file mapping:
 %   DWI_002.nii = b=0 s/mm^2
 %   DWI_001.nii = b=1000 s/mm^2
 %
@@ -35,8 +36,12 @@ NIFTI_ROOT = fullfile(ROOT,"derivatives","nifti");
 OUT_ROOT = fullfile(ROOT,"derivatives","adc_reconstructed");
 if ~isfolder(OUT_ROOT), mkdir(OUT_ROOT); end
 
-subjects = ["sub-P003","sub-P004","sub-P005"];
-bValue = 1000; % s/mm^2
+subjects = discoverSubjectsMissingVendorADC(NIFTI_ROOT);
+if isempty(subjects)
+    fprintf("No subjects require ADC reconstruction.\n");
+    return;
+end
+bValue = 1000; % s/mm^2; verify with PSE_DIFFUSION_DICOM_AUDIT_02.m
 rows = {};
 
 fprintf("============================================================\n");
@@ -139,4 +144,24 @@ function makeQC(S0,Sb,ADC,outFile,SUB)
     title(tl,SUB + " reconstructed ADC");
     exportgraphics(f,char(outFile),'Resolution',180);
     close(f);
+end
+
+function subjects = discoverSubjectsMissingVendorADC(niftiRoot)
+% Discover subjects with acute DWI but no vendor ADC map. The b-value/file
+% mapping still requires source-DICOM verification before reconstruction.
+
+    d = dir(fullfile(niftiRoot, "sub-*"));
+    d = d([d.isdir]);
+    names = sort(string({d.name}));
+    keep = false(size(names));
+
+    for i = 1:numel(names)
+        acuteDir = fullfile(niftiRoot, names(i), "acute");
+        hasDWI = isfolder(fullfile(acuteDir, "DWI"));
+        hasADC = isfile(fullfile(acuteDir, "ADC", "ADC.nii")) || ...
+                 isfile(fullfile(acuteDir, "ADC", "ADC.nii.gz"));
+        keep(i) = hasDWI && ~hasADC;
+    end
+
+    subjects = names(keep);
 end

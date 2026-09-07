@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 import csv
 from pathlib import Path
@@ -24,8 +25,6 @@ THALAMUS_FILE = ROOT / "derivatives" / "acute_pilot_thalamus_lesion_aware" / "PS
 CTP_FILE = ROOT / "derivatives" / "acute_pilot_thalamus_ctp_extended" / "PSE_ACUTE_THALAMUS_CTP_PATIENT_LEVEL_v01.csv"
 OUT_DIR = ROOT / "derivatives" / "acute_pilot_lesion_topography"
 QC_DIR = OUT_DIR / "qc"
-
-SUBJECTS = [f"sub-P{i:03d}" for i in range(1, 8)]
 
 SUBCORTICAL_LABELS = {
     "L": {"Thalamus":[10], "Caudate":[11], "Putamen":[12], "Pallidum":[13], "Hippocampus":[17], "Accumbens":[26], "VentralDC":[28]},
@@ -51,6 +50,10 @@ OUTCOME_FIELDS = [
     "PET_FDG_AI","ASL_CBF_AI","CTP_CBF_AI","CTP_CBV_AI",
     "CTP_MTT_AI","CTP_Tmax_AI","CTP_TTP_AI"
 ]
+
+def subject_sort_key(subject: str):
+    parts = re.split(r"(\d+)", subject)
+    return tuple(int(x) if x.isdigit() else x.lower() for x in parts)
 
 def to_float(x):
     if x is None:
@@ -161,7 +164,8 @@ def build_patient_table():
     thalamus_data = read_csv_by_subject(THALAMUS_FILE)
     ctp_data = read_csv_by_subject(CTP_FILE)
     rows = []
-    for subject in SUBJECTS:
+    subjects = sorted(lesion_summary, key=subject_sort_key)
+    for subject in subjects:
         print(f"\n[{subject}]")
         sr = lesion_summary[subject]
         side = sr["StrokeSide"].strip().upper()

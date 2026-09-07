@@ -30,8 +30,8 @@ The original DWI, ADC and FreeSurfer files are never modified.
 Usage
 -----
     python PSE_NVAUTO_SEGMENTATION_FINAL.py all
-    python PSE_NVAUTO_SEGMENTATION_FINAL.py P003
-    python PSE_NVAUTO_SEGMENTATION_FINAL.py sub-P003 --overwrite
+    python PSE_NVAUTO_SEGMENTATION_FINAL.py PXXX
+    python PSE_NVAUTO_SEGMENTATION_FINAL.py sub-PXXX --overwrite
 
 Environment
 -----------
@@ -377,7 +377,7 @@ def write_status(rows: list[dict[str, str]]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("subject", help="P003, sub-P003, or all")
+    parser.add_argument("subject", help="PXXX, sub-PXXX, or all")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 

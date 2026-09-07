@@ -83,6 +83,7 @@ To intentionally regenerate them, set OVERWRITE_FINAL = True below.
 from __future__ import annotations
 
 import os
+import re
 
 import csv
 import shutil
@@ -118,23 +119,18 @@ SIDE_FILE = (
     / "PSE_STROKE_SIDE_TEMPLATE.csv"
 )
 
+# Optional local QC-decision table. This file is intentionally not shipped
+# with participant-level decisions in the public repository.
+_qc_env = os.environ.get("PSE_LESION_QC_FILE", "").strip()
+QC_FILE = (
+    Path(_qc_env).expanduser().resolve()
+    if _qc_env
+    else SIDE_FILE.parent / "PSE_LESION_QC_DECISIONS.csv"
+)
+
 FINAL_ROOT = ROOT / "derivatives" / "lesion_masks_final"
 
 OVERWRITE_FINAL = False
-
-SUBJECTS = [f"sub-P{i:03d}" for i in range(1, 8)]
-
-# Visual QC decisions from the completed pilot review.
-# These labels document the decision; the script does not infer QC quality.
-QC_DECISIONS = {
-    "sub-P001": "ACCEPTED_PILOT_WITH_RESERVE",
-    "sub-P002": "ACCEPTED_PILOT",
-    "sub-P003": "ACCEPTED_PILOT",
-    "sub-P004": "ACCEPTED_PILOT",
-    "sub-P005": "ACCEPTED_PILOT",
-    "sub-P006": "ACCEPTED_PILOT",
-    "sub-P007": "ACCEPTED_PILOT",
-}
 
 ASEG_LABELS = {
     ("Thalamus", "L"): 10,
@@ -192,6 +188,45 @@ def read_stroke_sides(path: Path) -> dict[str, str]:
             if side in {"L", "R"}:
                 out[sub] = side
 
+    return out
+
+
+def subject_sort_key(subject: str):
+    """Natural-ish sort key for pseudonymized subject labels."""
+    parts = re.split(r"(\d+)", subject)
+    return tuple(int(x) if x.isdigit() else x.lower() for x in parts)
+
+
+def read_qc_decisions(path: Path) -> dict[str, str]:
+    """Read optional local visual-QC decisions.
+
+    Missing file is allowed: subjects then receive REVIEW_REQUIRED.
+    """
+    if not path.is_file():
+        return {}
+
+    out: dict[str, str] = {}
+    with path.open("r", newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        if not reader.fieldnames:
+            return out
+        field_map = {str(x).strip().lower(): x for x in reader.fieldnames}
+        subject_field = field_map.get("subject")
+        decision_field = field_map.get("qdecision") or field_map.get("qcdecision")
+        if subject_field is None or decision_field is None:
+            raise RuntimeError(
+                "QC-decision CSV must contain Subject and QDecision columns. "
+                f"Found: {reader.fieldnames}"
+            )
+        for row in reader:
+            sub = str(row.get(subject_field, "")).strip()
+            decision = str(row.get(decision_field, "")).strip()
+            if not sub:
+                continue
+            if not sub.startswith("sub-") and sub.startswith("P"):
+                sub = f"sub-{sub}"
+            if decision:
+                out[sub] = decision
     return out
 
 
@@ -451,6 +486,11 @@ def main() -> int:
     FINAL_ROOT.mkdir(parents=True, exist_ok=True)
 
     stroke_sides = read_stroke_sides(SIDE_FILE)
+    qc_decisions = read_qc_decisions(QC_FILE)
+    subjects = sorted(stroke_sides, key=subject_sort_key)
+
+    if not subjects:
+        raise RuntimeError(f"No valid subjects were found in stroke-side CSV: {SIDE_FILE}")
 
     status_rows: list[dict[str, object]] = []
     overlap_rows: list[dict[str, object]] = []
@@ -462,13 +502,14 @@ def main() -> int:
     print(f"Source root : {SOURCE_ROOT}")
     print(f"Final root  : {FINAL_ROOT}")
     print(f"Stroke side : {SIDE_FILE}")
+    print(f"QC decisions: {QC_FILE} (optional)")
     print("=" * 76)
 
-    for i, sub in enumerate(SUBJECTS, start=1):
+    for i, sub in enumerate(subjects, start=1):
 
         print()
         print("=" * 76)
-        print(f"[{i}/{len(SUBJECTS)}] {sub}")
+        print(f"[{i}/{len(subjects)}] {sub}")
         print("=" * 76)
 
         side = stroke_sides.get(sub)
@@ -486,7 +527,7 @@ def main() -> int:
         status = {
             "Subject": sub,
             "StrokeSide": side or "",
-            "QDecision": QC_DECISIONS.get(sub, "UNSPECIFIED"),
+            "QDecision": qc_decisions.get(sub, "REVIEW_REQUIRED"),
             "SourceSegmentation": str(source_seg),
             "FinalSegmentation": str(final_seg),
             "LesionVolume_mL_DWIgrid": "",
@@ -862,7 +903,7 @@ def main() -> int:
 
     direct_rows: list[dict[str, object]] = []
 
-    for sub in SUBJECTS:
+    for sub in subjects:
         side = stroke_sides.get(sub, "")
 
         thal = next(
@@ -894,7 +935,7 @@ def main() -> int:
             direct_rows.append({
                 "Subject": sub,
                 "StrokeSide": side,
-                "QDecision": QC_DECISIONS.get(sub, ""),
+                "QDecision": qc_decisions.get(sub, "REVIEW_REQUIRED"),
                 "LesionVolume_mL_DWIgrid": status.get(
                     "LesionVolume_mL_DWIgrid",
                     "",
@@ -925,7 +966,7 @@ def main() -> int:
         direct_rows.append({
             "Subject": sub,
             "StrokeSide": side,
-            "QDecision": QC_DECISIONS.get(sub, ""),
+            "QDecision": qc_decisions.get(sub, "REVIEW_REQUIRED"),
             "LesionVolume_mL_DWIgrid": status.get(
                 "LesionVolume_mL_DWIgrid",
                 "",
@@ -994,7 +1035,7 @@ def main() -> int:
     print("=" * 76)
     print("FINALIZATION COMPLETE")
     print("=" * 76)
-    print(f"Successful subjects: {n_ok}/{len(SUBJECTS)}")
+    print(f"Successful subjects: {n_ok}/{len(subjects)}")
     print(f"Status:      {status_csv}")
     print(f"Long overlap:{overlap_csv}")
     print(f"Ipsi/contra: {pair_csv}")
@@ -1007,7 +1048,7 @@ def main() -> int:
     )
     print("=" * 76)
 
-    return 0 if n_ok == len(SUBJECTS) else 1
+    return 0 if n_ok == len(subjects) else 1
 
 
 if __name__ == "__main__":

@@ -112,8 +112,6 @@ OUT_DIR = (
 REG_DIR = OUT_DIR / "registration"
 QC_DIR = OUT_DIR / "qc"
 
-SUBJECTS = [f"sub-P{i:03d}" for i in range(1, 8)]
-
 
 # ============================================================================
 # Regions and outcomes
@@ -144,6 +142,10 @@ OUTCOME_FIELDS = [
 
 # ============================================================================
 # Helpers
+
+def subject_sort_key(subject: str):
+    parts = re.split(r"(\d+)", subject)
+    return tuple(int(x) if x.isdigit() else x.lower() for x in parts)
 
 def to_float(x):
     if x is None:
@@ -573,8 +575,9 @@ def process_subjects(label_lookup):
     )
 
     rows = []
+    subjects = sorted(lesion_summary, key=subject_sort_key)
 
-    for subject in SUBJECTS:
+    for subject in subjects:
         print()
         print("=" * 72)
         print(subject)

@@ -95,7 +95,10 @@ if ~isfolder(OUT_MASK_ROOT), mkdir(OUT_MASK_ROOT); end
 if ~isfolder(OUT_VALUE_ROOT), mkdir(OUT_VALUE_ROOT); end
 if ~isfolder(WORK_ROOT), mkdir(WORK_ROOT); end
 
-subjects = "sub-P" + compose("%03d", 1:7);
+subjects = discoverSubjectDirs(ROI_NATIVE_ROOT);
+if isempty(subjects)
+    error("No subject ROI directories were found under: %s", ROI_NATIVE_ROOT);
+end
 
 roiNames = [ ...
     "Left_Thalamus", ...
@@ -755,4 +758,13 @@ function y = safeAI(left,right)
     else
         y = (left - right) / denom;
     end
+end
+
+function subjects = discoverSubjectDirs(parentDir)
+% Discover pseudonymized subject directories (sub-*) without assuming a
+% fixed cohort size or numbering scheme.
+
+    d = dir(fullfile(parentDir, "sub-*"));
+    d = d([d.isdir]);
+    subjects = sort(string({d.name}));
 end

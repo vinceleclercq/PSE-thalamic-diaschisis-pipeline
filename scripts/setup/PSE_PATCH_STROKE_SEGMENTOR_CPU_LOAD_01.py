@@ -90,7 +90,7 @@ def main() -> int:
     )
     print()
     print("Then rerun:")
-    print("  python PSE_DEEPISLES_INFER_03.py P002")
+    print("  python PSE_NVAUTO_SEGMENTATION_FINAL.py sub-PXXX")
     print("=" * 68)
 
     return 0

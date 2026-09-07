@@ -42,6 +42,7 @@ No inferential hypothesis tests are performed.
 from __future__ import annotations
 
 import os
+import re
 
 import csv
 import math
@@ -83,10 +84,12 @@ OUT_DIR = (
 )
 
 PRIMARY_MODALITIES = ["PET_FDG", "ASL_CBF", "CTP_CBF"]
-SUBJECTS = [f"sub-P{i:03d}" for i in range(1, 8)]
-
 DIRECT_THALAMUS_THRESHOLD_PCT = 1.0
 
+
+def subject_sort_key(subject: str):
+    parts = re.split(r"(\d+)", subject)
+    return tuple(int(x) if x.isdigit() else x.lower() for x in parts)
 
 def to_float(x):
     if x is None:
@@ -226,8 +229,9 @@ def read_primary_thalamic_data():
 
 def build_patient_table(lesion, roi):
     rows = []
+    subjects = sorted(lesion, key=subject_sort_key)
 
-    for sub in SUBJECTS:
+    for sub in subjects:
         l = lesion.get(sub, {})
 
         row = {

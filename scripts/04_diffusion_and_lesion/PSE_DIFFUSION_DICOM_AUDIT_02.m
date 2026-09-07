@@ -2,8 +2,8 @@
 % Audit ORIGINAL acute diffusion DICOM metadata to determine whether an ADC
 % series exists and to identify the b-values / meaning of DWI_001 vs DWI_002.
 %
-% Default subjects:
-%   sub-P003, sub-P004, sub-P005
+% Subjects are discovered automatically from the converted NIfTI tree:
+% subjects with an acute DWI folder but no vendor ADC map are audited.
 %
 % The script reads source DICOM headers only. It does NOT modify DICOMs.
 % v02 stores heterogeneous dicominfo outputs in cells because different
@@ -47,8 +47,13 @@ clear; clc;
 ROOT = string(getenv("PSE_ROOT"));
 if strlength(ROOT)==0, ROOT = fullfile(string(getenv("HOME")),"PSE"); end
 OUT_ROOT = fullfile(ROOT,"derivatives","coreg_diffusion");
+NIFTI_ROOT = fullfile(ROOT,"derivatives","nifti");
 
-subjects = ["sub-P003","sub-P004","sub-P005"];
+subjects = discoverSubjectsMissingVendorADC(NIFTI_ROOT);
+if isempty(subjects)
+    fprintf("No subjects with DWI and missing vendor ADC were found.\n");
+    return;
+end
 
 if ~isfolder(OUT_ROOT), mkdir(OUT_ROOT); end
 
@@ -405,4 +410,24 @@ function m = localModeFinite(x)
     else
         m=mode(x);
     end
+end
+
+function subjects = discoverSubjectsMissingVendorADC(niftiRoot)
+% Identify subjects with converted acute DWI data but no vendor ADC map.
+% This determines which source-DICOM folders need b-value verification.
+
+    d = dir(fullfile(niftiRoot, "sub-*"));
+    d = d([d.isdir]);
+    names = sort(string({d.name}));
+    keep = false(size(names));
+
+    for i = 1:numel(names)
+        acuteDir = fullfile(niftiRoot, names(i), "acute");
+        hasDWI = isfolder(fullfile(acuteDir, "DWI"));
+        hasADC = isfile(fullfile(acuteDir, "ADC", "ADC.nii")) || ...
+                 isfile(fullfile(acuteDir, "ADC", "ADC.nii.gz"));
+        keep(i) = hasDWI && ~hasADC;
+    end
+
+    subjects = names(keep);
 end
