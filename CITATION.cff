@@ -7,3 +7,5 @@ authors:
     given-names: Vincent
 version: 1.0.0
 date-released: 2026-09-07
+doi: 10.5281/zenodo.22646526
+url: https://github.com/vincentleclercq/PSE-thalamic-diaschisis-pipeline
